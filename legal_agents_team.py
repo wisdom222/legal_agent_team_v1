@@ -10,7 +10,7 @@ from agno.knowledge.embedder.openai import OpenAIEmbedder
 import tempfile
 import os
 
-# 定义默认的 Base URL，作为输入框的默认值
+# Define default Base URL
 DEFAULT_BASE_URL = "https://api.zhizengzeng.com/v1"
 
 def init_session_state():
@@ -48,12 +48,12 @@ def init_qdrant():
             embedder=OpenAIEmbedder(
                 id="text-embedding-3-small", 
                 api_key=st.session_state.openai_api_key,
-                base_url=st.session_state.openai_base_url # 使用动态配置的 Base URL
+                base_url=st.session_state.openai_base_url # Use dynamically configured Base URL
             )
         )
         return vector_db
     except Exception as e:
-        st.error(f"🔴 Qdrant 连接失败: {str(e)}")
+        st.error(f"🔴 Qdrant connection failed: {str(e)}")
         return None
 
 def process_document(uploaded_file, vector_db: Qdrant):
@@ -61,10 +61,10 @@ def process_document(uploaded_file, vector_db: Qdrant):
     Process document, create embeddings and store in Qdrant vector database
     """
     if not st.session_state.openai_api_key:
-        raise ValueError("未提供 OpenAI API 密钥")
+        raise ValueError("OpenAI API key not provided")
         
     os.environ['OPENAI_API_KEY'] = st.session_state.openai_api_key
-    os.environ['OPENAI_BASE_URL'] = st.session_state.openai_base_url # 同时也设置环境变量
+    os.environ['OPENAI_BASE_URL'] = st.session_state.openai_base_url # Set environment variable as well
     
     try:
         # Save the uploaded file to a temporary location
@@ -72,7 +72,7 @@ def process_document(uploaded_file, vector_db: Qdrant):
             temp_file.write(uploaded_file.getvalue())
             temp_file_path = temp_file.name
         
-        st.info("正在加载并处理文档...")
+        st.info("Loading and processing document...")
         
         # Create a Knowledge base with the vector_db
         knowledge_base = Knowledge(
@@ -80,12 +80,12 @@ def process_document(uploaded_file, vector_db: Qdrant):
         )
         
         # Add the document to the knowledge base
-        with st.spinner('📤 正在将文档加载到知识库...'):
+        with st.spinner('📤 Loading document into knowledge base...'):
             try:
                 knowledge_base.add_content(path=temp_file_path)
-                st.success("✅ 文档存储成功！")
+                st.success("✅ Document stored successfully!")
             except Exception as e:
-                st.error(f"加载文档出错: {str(e)}")
+                st.error(f"Error loading document: {str(e)}")
                 raise
         
         # Clean up the temporary file
@@ -97,45 +97,45 @@ def process_document(uploaded_file, vector_db: Qdrant):
         return knowledge_base
             
     except Exception as e:
-        st.error(f"文档处理错误: {str(e)}")
-        raise Exception(f"处理文档时出错: {str(e)}")
+        st.error(f"Document processing error: {str(e)}")
+        raise Exception(f"Error processing document: {str(e)}")
 
 def main():
-    st.set_page_config(page_title="法律文档分析助手", layout="wide")
+    st.set_page_config(page_title="Legal Document Analysis Assistant", layout="wide")
     init_session_state()
 
-    st.title("AI 法律智能体团队 👨‍⚖️")
+    st.title("AI Legal Agent Team 👨‍⚖️")
 
     with st.sidebar:
-        st.header("🔑 API 配置")
-   
+        st.header("🔑 API Configuration")
+    
         # 1. OpenAI API Key
         openai_key = st.text_input(
             "OpenAI API Key",
             type="password",
             value=st.session_state.openai_api_key if st.session_state.openai_api_key else "",
-            help="输入您的 OpenAI API 密钥"
+            help="Enter your OpenAI API Key"
         )
         if openai_key:
             st.session_state.openai_api_key = openai_key
 
-        # 2. OpenAI Base URL (新增的输入框)
+        # 2. OpenAI Base URL
         base_url = st.text_input(
             "OpenAI Base URL",
             value=st.session_state.openai_base_url,
-            help="输入 OpenAI 代理地址（如果使用官方 API 可不填或填官方地址）"
+            help="Enter OpenAI Base URL (leave blank or use official URL if not using a proxy)"
         )
         if base_url:
             st.session_state.openai_base_url = base_url
 
-        st.divider() # 分隔线
+        st.divider() # Divider
 
         # 3. Qdrant API Key
         qdrant_key = st.text_input(
             "Qdrant API Key",
             type="password",
             value=st.session_state.qdrant_api_key if st.session_state.qdrant_api_key else "",
-            help="输入您的 Qdrant API 密钥"
+            help="Enter your Qdrant API Key"
         )
         if qdrant_key:
             st.session_state.qdrant_api_key = qdrant_key
@@ -144,7 +144,7 @@ def main():
         qdrant_url = st.text_input(
             "Qdrant URL",
             value=st.session_state.qdrant_url if st.session_state.qdrant_url else "",
-            help="输入您的 Qdrant 实例 URL"
+            help="Enter your Qdrant Instance URL"
         )
         if qdrant_url:
             st.session_state.qdrant_url = qdrant_url
@@ -155,20 +155,20 @@ def main():
                     # Make sure we're initializing a QdrantClient here
                     st.session_state.vector_db = init_qdrant()
                     if st.session_state.vector_db:
-                        st.success("成功连接到 Qdrant！")
+                        st.success("Successfully connected to Qdrant!")
             except Exception as e:
-                st.error(f"连接 Qdrant 失败: {str(e)}")
+                st.error(f"Failed to connect to Qdrant: {str(e)}")
 
         st.divider()
 
         if all([st.session_state.openai_api_key, st.session_state.vector_db]):
-            st.header("📄 文档上传")
-            uploaded_file = st.file_uploader("上传法律文档", type=['pdf'])
+            st.header("📄 Document Upload")
+            uploaded_file = st.file_uploader("Upload Legal Document", type=['pdf'])
             
             if uploaded_file:
                 # Check if this file has already been processed
                 if uploaded_file.name not in st.session_state.processed_files:
-                    with st.spinner("正在处理文档..."):
+                    with st.spinner("Processing document..."):
                         try:
                             # Process the document and get the knowledge base
                             knowledge_base = process_document(uploaded_file, st.session_state.vector_db)
@@ -178,200 +178,200 @@ def main():
                                 # Add the file to processed files
                                 st.session_state.processed_files.add(uploaded_file.name)
                                 
-                                # 获取当前的 Base URL
+                                # Get current Base URL
                                 current_base_url = st.session_state.openai_base_url
 
                                 # Initialize agents
                                 legal_researcher = Agent(
-                                    name="法律研究员",
-                                    role="法律研究专家",
+                                    name="Legal Researcher",
+                                    role="Legal Research Expert",
                                     model=OpenAIChat(id="gpt-4.1",
                                                      api_key=st.session_state.openai_api_key, 
-                                                     base_url=current_base_url), # 使用配置的 Base URL
+                                                     base_url=current_base_url), # Use configured Base URL
                                     tools=[DuckDuckGoTools()],
                                     knowledge=st.session_state.knowledge_base,
                                     search_knowledge=True,
                                     instructions=[
-                                        "查找并引用相关的法律案例和判例",
-                                        "提供带有来源的详细研究摘要",
-                                        "引用上传文档中的具体章节",
-                                        "始终在知识库中搜索相关信息"
+                                        "Find and cite relevant legal cases and precedents",
+                                        "Provide detailed research summaries with sources",
+                                        "Cite specific sections from the uploaded document",
+                                        "Always search the knowledge base for relevant information"
                                     ],
                                     debug_mode=True,
                                     markdown=True
                                 )
 
                                 contract_analyst = Agent(
-                                    name="合同分析师",
-                                    role="合同分析专家",
+                                    name="Contract Analyst",
+                                    role="Contract Analysis Expert",
                                     model=OpenAIChat(id="gpt-4.1",
                                                      api_key=st.session_state.openai_api_key, 
-                                                     base_url=current_base_url), # 使用配置的 Base URL
+                                                     base_url=current_base_url), # Use configured Base URL
                                     knowledge=st.session_state.knowledge_base,
                                     search_knowledge=True,
                                     instructions=[
-                                        "彻底审查合同",
-                                        "识别关键条款和潜在问题",
-                                        "引用文档中的具体条款"
+                                        "Thoroughly review the contract",
+                                        "Identify key terms and potential issues",
+                                        "Cite specific clauses from the document"
                                     ],
                                     markdown=True
                                 )
 
                                 legal_strategist = Agent(
-                                    name="法律策略师", 
-                                    role="法律策略专家",
+                                    name="Legal Strategist", 
+                                    role="Legal Strategy Expert",
                                     model=OpenAIChat(id="gpt-4.1",
                                                      api_key=st.session_state.openai_api_key, 
-                                                     base_url=current_base_url), # 使用配置的 Base URL
+                                                     base_url=current_base_url), # Use configured Base URL
                                     knowledge=st.session_state.knowledge_base,
                                     search_knowledge=True,
                                     instructions=[
-                                        "制定全面的法律策略",
-                                        "提供可执行的建议",
-                                        "同时考虑风险和机遇"
+                                        "Develop comprehensive legal strategies",
+                                        "Provide actionable recommendations",
+                                        "Consider both risks and opportunities"
                                     ],
                                     markdown=True
                                 )
 
                                 # Legal Agent Team
                                 st.session_state.legal_team = Team(
-                                    name="法律团队负责人",
+                                    name="Legal Team Lead",
                                     model=OpenAIChat(id="gpt-4.1",
                                                      api_key=st.session_state.openai_api_key, 
-                                                     base_url=current_base_url), # 使用配置的 Base URL
+                                                     base_url=current_base_url), # Use configured Base URL
                                     members=[legal_researcher, contract_analyst, legal_strategist],
                                     knowledge=st.session_state.knowledge_base,
                                     search_knowledge=True,
                                     instructions=[
-                                        "协调团队成员之间的分析工作",
-                                        "提供全面的回复",
-                                        "确保所有建议都有适当的来源",
-                                        "引用上传文档的具体部分",
-                                        "在分配任务前始终先搜索知识库"
+                                        "Coordinate analysis among team members",
+                                        "Provide comprehensive responses",
+                                        "Ensure all recommendations are properly sourced",
+                                        "Cite specific parts of the uploaded document",
+                                        "Always search the knowledge base before assigning tasks"
                                     ],
                                     debug_mode=True,
                                     markdown=True
                                 )
                                 
-                                st.success("✅ 文档处理完成，团队初始化完毕！")
+                                st.success("✅ Document processing complete, team initialized!")
                                 
                         except Exception as e:
-                            st.error(f"处理文档出错: {str(e)}")
+                            st.error(f"Error processing document: {str(e)}")
                 else:
                     # File already processed, just show a message
-                    st.success("✅ 文档已处理，团队准备就绪！")
+                    st.success("✅ Document already processed, team ready!")
 
             st.divider()
-            st.header("🔍 分析选项")
+            st.header("🔍 Analysis Options")
             analysis_type = st.selectbox(
-                "选择分析类型",
+                "Select Analysis Type",
                 [
-                    "合同审查",
-                    "法律研究",
-                    "风险评估",
-                    "合规性检查",
-                    "自定义查询"
+                    "Contract Review",
+                    "Legal Research",
+                    "Risk Assessment",
+                    "Compliance Check",
+                    "Custom Query"
                 ]
             )
         else:
-            st.warning("请配置所有 API 凭证以继续")
+            st.warning("Please configure all API credentials to continue")
 
     # Main content area
     if not all([st.session_state.openai_api_key, st.session_state.vector_db]):
-        st.info("👈 请在侧边栏配置您的 API 凭证以开始")
+        st.info("👈 Please configure your API credentials in the sidebar to start")
     elif not uploaded_file:
-        st.info("👈 请上传法律文档以开始分析")
+        st.info("👈 Please upload a legal document to start analysis")
     elif st.session_state.legal_team:
         # Create a dictionary for analysis type icons
         analysis_icons = {
-            "合同审查": "📑",
-            "法律研究": "🔍",
-            "风险评估": "⚠️",
-            "合规性检查": "✅",
-            "自定义查询": "💭"
+            "Contract Review": "📑",
+            "Legal Research": "🔍",
+            "Risk Assessment": "⚠️",
+            "Compliance Check": "✅",
+            "Custom Query": "💭"
         }
 
         # Dynamic header with icon
         st.header(f"{analysis_icons[analysis_type]} {analysis_type}")
   
         analysis_configs = {
-            "合同审查": {
-                "query": "审查此合同并识别关键条款、义务和潜在问题。",
-                "agents": ["合同分析师"],
-                "description": "专注于条款和义务的详细合同分析"
+            "Contract Review": {
+                "query": "Review this contract and identify key terms, obligations, and potential issues.",
+                "agents": ["Contract Analyst"],
+                "description": "Detailed contract analysis focusing on terms and obligations"
             },
-            "法律研究": {
-                "query": "研究与此文档相关的案例和判例。",
-                "agents": ["法律研究员"],
-                "description": "相关法律案例和判例的研究"
+            "Legal Research": {
+                "query": "Research cases and precedents relevant to this document.",
+                "agents": ["Legal Researcher"],
+                "description": "Research on relevant legal cases and precedents"
             },
-            "风险评估": {
-                "query": "分析此文档中的潜在法律风险和责任。",
-                "agents": ["合同分析师", "法律策略师"],
-                "description": "综合风险分析和战略评估"
+            "Risk Assessment": {
+                "query": "Analyze potential legal risks and liabilities in this document.",
+                "agents": ["Contract Analyst", "Legal Strategist"],
+                "description": "Comprehensive risk analysis and strategic assessment"
             },
-            "合规性检查": {
-                "query": "检查此文档的监管合规性问题。",
-                "agents": ["法律研究员", "合同分析师", "法律策略师"],
-                "description": "全面的合规性分析"
+            "Compliance Check": {
+                "query": "Check for regulatory compliance issues in this document.",
+                "agents": ["Legal Researcher", "Contract Analyst", "Legal Strategist"],
+                "description": "Comprehensive compliance analysis"
             },
-            "自定义查询": {
+            "Custom Query": {
                 "query": None,
-                "agents": ["法律研究员", "合同分析师", "法律策略师"],
-                "description": "使用所有可用智能体的自定义分析"
+                "agents": ["Legal Researcher", "Contract Analyst", "Legal Strategist"],
+                "description": "Custom analysis using all available agents"
             }
         }
 
         st.info(f"📋 {analysis_configs[analysis_type]['description']}")
-        st.write(f"🤖 活跃法律 AI 智能体: {', '.join(analysis_configs[analysis_type]['agents'])}")  #dictionary!!
+        st.write(f"🤖 Active Legal AI Agents: {', '.join(analysis_configs[analysis_type]['agents'])}")  # dictionary!!
 
         # Replace the existing user_query section with this:
-        if analysis_type == "自定义查询":
+        if analysis_type == "Custom Query":
             user_query = st.text_area(
-                "输入您的具体问题:",
-                help="添加您想分析的任何具体问题或要点"
+                "Enter your specific question:",
+                help="Add any specific questions or points you want to analyze"
             )
         else:
             user_query = None  # Set to None for non-custom queries
 
 
-        if st.button("开始分析"):
-            if analysis_type == "自定义查询" and not user_query:
-                st.warning("请输入问题")
+        if st.button("Start Analysis"):
+            if analysis_type == "Custom Query" and not user_query:
+                st.warning("Please enter a question")
             else:
-                with st.spinner("正在分析文档..."):
+                with st.spinner("Analyzing document..."):
                     try:
                         # Ensure OpenAI API key is set
                         os.environ['OPENAI_API_KEY'] = st.session_state.openai_api_key
-                        os.environ['OPENAI_BASE_URL'] = st.session_state.openai_base_url # 确保环境变量也更新
+                        os.environ['OPENAI_BASE_URL'] = st.session_state.openai_base_url # Ensure environment variables are also updated
                         
                         # Combine predefined and user queries
-                        if analysis_type != "自定义查询":
+                        if analysis_type != "Custom Query":
                             combined_query = f"""
-                            使用上传的文档作为参考：
+                            Using the uploaded document as reference:
                             
-                            主要分析任务：{analysis_configs[analysis_type]['query']}
-                            关注领域：{', '.join(analysis_configs[analysis_type]['agents'])}
+                            Primary Analysis Task: {analysis_configs[analysis_type]['query']}
+                            Focus Areas: {', '.join(analysis_configs[analysis_type]['agents'])}
                             
-                            请搜索知识库并提供文档中的具体引用。
+                            Please search the knowledge base and provide specific citations from the document.
                             """
                         else:
                             combined_query = f"""
-                            使用上传的文档作为参考：
+                            Using the uploaded document as reference:
                             
                             {user_query}
                             
-                            请搜索知识库并提供文档中的具体引用。
-                            关注领域：{', '.join(analysis_configs[analysis_type]['agents'])}
+                            Please search the knowledge base and provide specific citations from the document.
+                            Focus Areas: {', '.join(analysis_configs[analysis_type]['agents'])}
                             """
 
                         response: RunOutput = st.session_state.legal_team.run(combined_query)
                         
                         # Display results in tabs
-                        tabs = st.tabs(["分析结果", "关键点", "建议"])
+                        tabs = st.tabs(["Analysis Results", "Key Points", "Recommendations"])
                         
                         with tabs[0]:
-                            st.markdown("### 详细分析")
+                            st.markdown("### Detailed Analysis")
                             if response.content:
                                 st.markdown(response.content)
                             else:
@@ -380,13 +380,13 @@ def main():
                                         st.markdown(message.content)
                         
                         with tabs[1]:
-                            st.markdown("### 关键点")
+                            st.markdown("### Key Points")
                             key_points_response: RunOutput = st.session_state.legal_team.run(
-                                f"""基于之前的分析：    
+                                f"""Based on the previous analysis:    
                                 {response.content}
                                 
-                                请用要点形式总结关键点。
-                                重点关注来自以下方面的见解：{', '.join(analysis_configs[analysis_type]['agents'])}"""
+                                Please summarize key points in bullet format.
+                                Focus on insights from: {', '.join(analysis_configs[analysis_type]['agents'])}"""
                             )
                             if key_points_response.content:
                                 st.markdown(key_points_response.content)
@@ -396,13 +396,13 @@ def main():
                                         st.markdown(message.content)
                         
                         with tabs[2]:
-                            st.markdown("### 建议")
+                            st.markdown("### Recommendations")
                             recommendations_response: RunOutput = st.session_state.legal_team.run(
-                                f"""基于之前的分析：
+                                f"""Based on the previous analysis:
                                 {response.content}
                                 
-                                基于分析，您的关键建议是什么，最佳行动方案是什么？
-                                提供来自以下方面的具体建议：{', '.join(analysis_configs[analysis_type]['agents'])}"""
+                                Based on the analysis, what are your key recommendations and the best course of action?
+                                Provide specific recommendations from: {', '.join(analysis_configs[analysis_type]['agents'])}"""
                             )
                             if recommendations_response.content:
                                 st.markdown(recommendations_response.content)
@@ -412,9 +412,9 @@ def main():
                                         st.markdown(message.content)
 
                     except Exception as e:
-                        st.error(f"分析过程中出错: {str(e)}")
+                        st.error(f"Error during analysis: {str(e)}")
     else:
-        st.info("请上传法律文档以开始分析")
+        st.info("Please upload a legal document to start analysis")
 
 if __name__ == "__main__":
     main()
